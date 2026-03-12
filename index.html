@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PayApp Portal — York Plumbing & Mechanical</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%233B82F6'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-weight='800' font-size='18' font-family='Arial'%3EY%3C/text%3E%3C/svg%3E" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0F1117; font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace; color: #E2E8F0; font-size: 13px; }
+    #root { min-height: 100vh; }
+
+    .toast { position: fixed; top: 20px; right: 20px; background: #22C55E; color: #000; padding: 10px 20px; border-radius: 6px; font-weight: 600; z-index: 999; font-size: 12px; transition: opacity 0.3s; }
+    .toast.hidden { opacity: 0; pointer-events: none; }
+
+    .header { background: #1A1D27; border-bottom: 1px solid #2A2D3A; padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
+    .header-logo { width: 32px; height: 32px; background: #3B82F6; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; cursor: pointer; }
+    .header-title { font-weight: 700; font-size: 14px; letter-spacing: 0.05em; }
+    .header-sub { font-size: 10px; color: #64748B; letter-spacing: 0.1em; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .header-proj-id { color: #64748B; }
+    .header-proj-name { font-weight: 600; }
+
+    .status-badge { padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .status-draft { background: #1E3A5F; color: #3B82F6; }
+    .status-pending { background: #422006; color: #EAB308; }
+    .status-final { background: #14532D; color: #22C55E; }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+    /* Dashboard */
+    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .dash-title { font-size: 20px; font-weight: 700; }
+    .dash-period { font-size: 11px; color: #64748B; }
+    .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; }
+    .project-card { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 8px; padding: 20px; cursor: pointer; transition: border-color 0.2s; }
+    .project-card:hover { border-color: #3B82F6; }
+    .card-top { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .card-id { font-size: 11px; color: #3B82F6; font-weight: 600; letter-spacing: 0.08em; }
+    .card-status { font-size: 11px; color: #22C55E; font-weight: 600; }
+    .card-name { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+    .card-customer { color: #64748B; font-size: 12px; margin-bottom: 16px; }
+    .card-stats { display: flex; justify-content: space-between; }
+    .stat-label { font-size: 10px; color: #64748B; margin-bottom: 2px; }
+    .stat-value { font-weight: 600; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 2px; margin-bottom: 20px; }
+    .tab { background: #1A1D27; color: #64748B; border: 1px solid #2A2D3A; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: inherit; }
+    .tab.active { background: #3B82F6; color: #fff; border-color: #3B82F6; }
+    .tab-spacer { flex: 1; }
+    .btn-co { background: #1A1D27; color: #F97316; border: 1px solid #2A2D3A; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: inherit; }
+    .btn-submit { background: #422006; color: #EAB308; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: inherit; }
+    .btn-finalize { background: #14532D; color: #22C55E; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: inherit; }
+
+    /* Summary cards */
+    .summary-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+    .summary-card { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 6px; padding: 14px 16px; }
+    .summary-label { font-size: 10px; color: #64748B; margin-bottom: 6px; letter-spacing: 0.06em; }
+    .summary-value { font-size: 16px; font-weight: 700; }
+
+    /* SOV Table */
+    .sov-wrapper { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 8px; overflow: hidden; }
+    .sov-header { padding: 12px 16px; border-bottom: 1px solid #2A2D3A; display: flex; justify-content: space-between; align-items: center; }
+    .sov-title { font-weight: 700; font-size: 13px; }
+    .sov-meta { font-size: 11px; color: #64748B; }
+    .sov-scroll { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead tr { background: #12141C; }
+    th { padding: 10px 8px; text-align: right; color: #64748B; font-weight: 600; font-size: 10px; letter-spacing: 0.05em; border-bottom: 2px solid #2A2D3A; white-space: nowrap; }
+    th:nth-child(2) { text-align: left; }
+    td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #2A2D3A; }
+    td:nth-child(1) { text-align: center; color: #64748B; }
+    td:nth-child(2) { text-align: left; }
+    tbody tr:hover { background: #22252F; }
+
+    .co-row { background: rgba(249,115,22,0.03); }
+    .co-row:hover { background: rgba(249,115,22,0.08) !important; }
+    .co-row td:nth-child(1), .co-row td:nth-child(2) { color: #F97316; }
+    .co-section-header td { padding: 8px; background: #12141C; font-weight: 700; font-size: 11px; color: #F97316; letter-spacing: 0.08em; }
+
+    .subtotal-row { border-top: 2px solid #2A2D3A; border-bottom: 2px solid #2A2D3A; }
+    .subtotal-row td { padding: 8px; font-weight: 700; }
+    .subtotal-row.co-sub { border-color: #F97316; }
+    .subtotal-row.grand { background: #12141C; border-color: #3B82F6; }
+
+    .cell-input { background: transparent; border: 1px solid #2A2D3A; color: #E2E8F0; padding: 4px 6px; border-radius: 3px; text-align: right; width: 90px; font-size: 12px; font-family: inherit; outline: none; }
+    .cell-input:focus { border-color: #3B82F6; }
+    .cell-input.green { color: #22C55E; }
+    .cell-input.orange { color: #F97316; }
+    .cell-input.wide { width: 100%; text-align: left; }
+
+    .pct-bar-wrap { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+    .pct-bar-track { width: 40px; height: 4px; background: #2A2D3A; border-radius: 2px; overflow: hidden; }
+    .pct-bar-fill { height: 100%; border-radius: 2px; }
+    .pct-text { font-size: 11px; min-width: 38px; text-align: right; }
+
+    .text-green { color: #22C55E; }
+    .text-yellow { color: #EAB308; }
+    .text-orange { color: #F97316; }
+    .text-blue { color: #3B82F6; }
+    .text-dim { color: #64748B; }
+    .fw700 { font-weight: 700; }
+
+    /* G702 */
+    .g702 { background: #1A1D27; border: 1px solid #2A2D3A; border-radius: 8px; padding: 32px; max-width: 800px; }
+    .g702-title { text-align: center; margin-bottom: 24px; }
+    .g702-title h2 { font-size: 16px; font-weight: 800; letter-spacing: 0.08em; margin: 0; }
+    .g702-title p { font-size: 11px; color: #64748B; margin-top: 4px; }
+    .g702-info { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+    .g702-info-label { font-size: 10px; color: #64748B; margin-bottom: 4px; }
+    .g702-info-value { font-weight: 700; }
+    .g702-info-sub { color: #64748B; }
+    .g702-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .g702-num-label { font-size: 10px; color: #64748B; }
+    .g702-num-value { font-weight: 700; font-size: 18px; }
+
+    .g702-lines { border-top: 1px solid #2A2D3A; padding-top: 20px; }
+    .g702-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2A2D3A; }
+    .g702-line-label span { color: #64748B; margin-right: 8px; }
+    .g702-line-value { font-weight: 700; }
+    .g702-line.highlight { background: #14532D; margin: 0 -16px; padding: 12px 16px; border-radius: 4px; }
+    .g702-line.highlight .g702-line-value { color: #22C55E; font-size: 18px; }
+
+    @media (max-width: 900px) {
+      .summary-cards { grid-template-columns: repeat(2, 1fr); }
+      .dash-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+// ─── DATA ──────────────────────────────────────────────────────────────
+const PROJECTS = [
+  { id: "24-100", name: "TU - Student Union", customer: "Crossland Construction Company", baseContract: 485000, retainageRate: 0.10, status: "Active" },
+  { id: "24-157", name: "Celebree School", customer: "Key Construction", baseContract: 312000, retainageRate: 0.10, status: "Active" },
+  { id: "23-186", name: "Tulsa Country Club PLBG", customer: "Joel Coggins Construction", baseContract: 178500, retainageRate: 0.05, status: "Active" },
+];
+
+const DEFAULT_SOV = [
+  { lineNo: 1, description: "Mobilization", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 2, description: "HVAC Labor", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 3, description: "HVAC Material", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 4, description: "HVAC Equipment", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 5, description: "Plumbing Labor", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 6, description: "Plumbing Material", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 7, description: "Plumbing Fixtures", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 8, description: "Mechanical Material", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 9, description: "Subcontractors", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 10, description: "Controls", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 11, description: "Insulation", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 12, description: "Test and Balance", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 13, description: "Excavation", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 14, description: "Demobilization", scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+];
+
+const SAMPLE_SOV = [
+  { lineNo: 1, description: "Mobilization", scheduledValue: 24250, prevBilled: 24250, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 2, description: "HVAC Labor", scheduledValue: 145500, prevBilled: 72750, thisPeriod: 21825, storedMaterial: 0, isCO: false },
+  { lineNo: 3, description: "HVAC Material", scheduledValue: 97000, prevBilled: 58200, thisPeriod: 14550, storedMaterial: 8730, isCO: false },
+  { lineNo: 4, description: "HVAC Equipment", scheduledValue: 48500, prevBilled: 48500, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 5, description: "Plumbing Labor", scheduledValue: 72750, prevBilled: 36375, thisPeriod: 10913, storedMaterial: 0, isCO: false },
+  { lineNo: 6, description: "Plumbing Material", scheduledValue: 48500, prevBilled: 24250, thisPeriod: 9700, storedMaterial: 4850, isCO: false },
+  { lineNo: 7, description: "Subcontractors", scheduledValue: 24250, prevBilled: 12125, thisPeriod: 6063, storedMaterial: 0, isCO: false },
+  { lineNo: 8, description: "Controls", scheduledValue: 14550, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+  { lineNo: 9, description: "Demobilization", scheduledValue: 9700, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: false },
+];
+
+const SAMPLE_COS = [
+  { lineNo: 10, description: "CO-01: Add RTU #7", scheduledValue: 18500, prevBilled: 9250, thisPeriod: 4625, storedMaterial: 0, isCO: true },
+  { lineNo: 11, description: "CO-02: Relocate Duct Riser", scheduledValue: 7200, prevBilled: 0, thisPeriod: 3600, storedMaterial: 0, isCO: true },
+];
+
+const fmt = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+const fmtPct = (n) => (n * 100).toFixed(1) + "%";
+const today = () => new Date().toISOString().slice(0, 10);
+const periodEnd = () => { const d = new Date(); d.setMonth(d.getMonth(), 0); return d.toISOString().slice(0, 10); };
+
+// ─── COMPONENTS ────────────────────────────────────────────────────────
+function PctBar({ pct }) {
+  const c = pct >= 1 ? "#22C55E" : pct >= 0.5 ? "#3B82F6" : pct > 0 ? "#EAB308" : "#64748B";
+  return (
+    <div className="pct-bar-wrap">
+      <div className="pct-bar-track">
+        <div className="pct-bar-fill" style={{ width: `${Math.min(pct * 100, 100)}%`, background: c }} />
+      </div>
+      <span className="pct-text" style={{ color: c }}>{(pct * 100).toFixed(0)}%</span>
+    </div>
+  );
+}
+
+function SubtotalRow({ label, lines, retRate, className }) {
+  const sv = lines.reduce((s, l) => s + l.scheduledValue, 0);
+  const prev = lines.reduce((s, l) => s + l.prevBilled, 0);
+  const tp = lines.reduce((s, l) => s + l.thisPeriod, 0);
+  const sm = lines.reduce((s, l) => s + l.storedMaterial, 0);
+  const total = prev + tp + sm;
+  const pct = sv > 0 ? total / sv : 0;
+  return (
+    <tr className={`subtotal-row ${className || ""}`}>
+      <td colSpan={2} style={{ textAlign: "left", letterSpacing: "0.06em", fontSize: 11 }}>{label}</td>
+      <td>{fmt(sv)}</td>
+      <td className="text-dim">{fmt(prev)}</td>
+      <td className="text-green">{fmt(tp)}</td>
+      <td>{fmt(sm)}</td>
+      <td>{fmt(total)}</td>
+      <td><PctBar pct={pct} /></td>
+      <td>{fmt(sv - total)}</td>
+      <td className="text-yellow">{fmt(total * retRate)}</td>
+    </tr>
+  );
+}
+
+// ─── MAIN APP ──────────────────────────────────────────────────────────
+function App() {
+  const [view, setView] = useState("dashboard");
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [payAppNum, setPayAppNum] = useState(6);
+  const [appDate] = useState(today());
+  const [periodTo] = useState(periodEnd());
+  const [sovLines, setSovLines] = useState([]);
+  const [coLines, setCoLines] = useState([]);
+  const [prevCertified, setPrevCertified] = useState(0);
+  const [billingStatus, setBillingStatus] = useState("Draft");
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  const selectProject = (proj) => {
+    setSelectedProject(proj);
+    if (proj.id === "24-100") {
+      setSovLines(SAMPLE_SOV.map(l => ({ ...l })));
+      setCoLines(SAMPLE_COS.map(l => ({ ...l })));
+      setPrevCertified(248200);
+      setPayAppNum(6);
+    } else {
+      setSovLines(DEFAULT_SOV.map((l, i) => ({
+        ...l,
+        scheduledValue: Math.round(proj.baseContract * [0.05, 0.20, 0.15, 0.10, 0.15, 0.10, 0.05, 0.05, 0.05, 0.03, 0.03, 0.02, 0.01, 0.01][i])
+      })));
+      setCoLines([]);
+      setPrevCertified(0);
+      setPayAppNum(1);
+    }
+    setBillingStatus("Draft");
+    setView("project");
+  };
+
+  const allLines = useMemo(() => [...sovLines, ...coLines], [sovLines, coLines]);
+
+  const calc = useMemo(() => {
+    const origContract = sovLines.reduce((s, l) => s + l.scheduledValue, 0);
+    const coTotal = coLines.reduce((s, l) => s + l.scheduledValue, 0);
+    const contractToDate = origContract + coTotal;
+    const totalCompleted = allLines.reduce((s, l) => s + l.prevBilled + l.thisPeriod + l.storedMaterial, 0);
+    const storedTotal = allLines.reduce((s, l) => s + l.storedMaterial, 0);
+    const retainageRate = selectedProject?.retainageRate || 0.10;
+    const totalRetainage = (totalCompleted - storedTotal) * retainageRate;
+    const earnedLessRetainage = totalCompleted - totalRetainage;
+    const currentDue = earnedLessRetainage - prevCertified;
+    const balanceToFinish = contractToDate - earnedLessRetainage;
+    return { origContract, coTotal, contractToDate, totalCompleted, storedTotal, retainageRate, totalRetainage, earnedLessRetainage, currentDue, balanceToFinish };
+  }, [allLines, sovLines, coLines, selectedProject, prevCertified]);
+
+  const updateLine = (lines, setLines, idx, field, value) => {
+    setLines(lines.map((l, i) => i !== idx ? l : { ...l, [field]: value }));
+  };
+
+  const addCO = () => {
+    const num = coLines.length + 1;
+    setCoLines([...coLines, { lineNo: sovLines.length + num, description: `CO-${String(num).padStart(2, "0")}: `, scheduledValue: 0, prevBilled: 0, thisPeriod: 0, storedMaterial: 0, isCO: true }]);
+  };
+
+  const retRate = selectedProject?.retainageRate || 0.10;
+
+  return (
+    <div>
+      {/* Toast */}
+      <div className={`toast ${toast ? "" : "hidden"}`}>{toast}</div>
+
+      {/* Header */}
+      <div className="header">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => setView("dashboard")}>
+          <div className="header-logo">Y</div>
+          <div>
+            <div className="header-title">PAYAPP PORTAL</div>
+            <div className="header-sub">YORK PLUMBING & MECHANICAL</div>
+          </div>
+        </div>
+        {selectedProject && view !== "dashboard" && (
+          <div className="header-right">
+            <span className="header-proj-id">{selectedProject.id}</span>
+            <span className="header-proj-name">{selectedProject.name}</span>
+            <span className={`status-badge status-${billingStatus.toLowerCase().replace(" ", "-")}`}>{billingStatus}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="container">
+        {/* ─── DASHBOARD ─── */}
+        {view === "dashboard" && (
+          <div>
+            <div className="dash-header">
+              <h2 className="dash-title">Active Projects</h2>
+              <div className="dash-period">Billing Period: {new Date().toLocaleString("en-US", { month: "long", year: "numeric" })}</div>
+            </div>
+            <div className="dash-grid">
+              {PROJECTS.map(p => (
+                <div key={p.id} className="project-card" onClick={() => selectProject(p)}>
+                  <div className="card-top">
+                    <div className="card-id">{p.id}</div>
+                    <div className="card-status">{p.status}</div>
+                  </div>
+                  <div className="card-name">{p.name}</div>
+                  <div className="card-customer">{p.customer}</div>
+                  <div className="card-stats">
+                    <div><div className="stat-label">CONTRACT</div><div className="stat-value">{fmt(p.baseContract)}</div></div>
+                    <div><div className="stat-label">RETAINAGE</div><div className="stat-value">{fmtPct(p.retainageRate)}</div></div>
+                    <div><div className="stat-label">NEXT PA#</div><div className="stat-value">{p.id === "24-100" ? 6 : 1}</div></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── SOV / G703 VIEW ─── */}
+        {(view === "project" || view === "g703") && selectedProject && (
+          <div>
+            <div className="tabs">
+              {[["project", "SOV Entry"], ["g702", "G702 Summary"], ["g703", "G703 Continuation"]].map(([v, label]) => (
+                <button key={v} className={`tab ${view === v ? "active" : ""}`} onClick={() => setView(v)}>{label}</button>
+              ))}
+              <div className="tab-spacer" />
+              <button className="btn-co" onClick={addCO}>+ Add CO</button>
+              {billingStatus === "Draft" && <button className="btn-submit" onClick={() => { setBillingStatus("Pending approval"); showToast("Pay App submitted for review"); }}>Submit for Review</button>}
+              {billingStatus === "Pending approval" && <button className="btn-finalize" onClick={() => { setBillingStatus("Final"); showToast("Pay App finalized — ready for QBD handoff"); }}>Finalize</button>}
+            </div>
+
+            <div className="summary-cards">
+              {[
+                ["Original Contract", fmt(calc.origContract), ""],
+                ["Change Orders", fmt(calc.coTotal), calc.coTotal > 0 ? "text-orange" : "text-dim"],
+                ["Contract to Date", fmt(calc.contractToDate), ""],
+                ["Completed & Stored", fmt(calc.totalCompleted), "text-blue"],
+                [`Current Due (PA#${payAppNum})`, fmt(calc.currentDue), "text-green"],
+              ].map(([label, val, cls]) => (
+                <div key={label} className="summary-card">
+                  <div className="summary-label">{label}</div>
+                  <div className={`summary-value ${cls}`}>{val}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="sov-wrapper">
+              <div className="sov-header">
+                <div className="sov-title">CONTINUATION SHEET — G703</div>
+                <div className="sov-meta">Pay App #{payAppNum} &bull; Period to {periodTo}</div>
+              </div>
+              <div className="sov-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      {["#", "Description", "Scheduled Value", "Prev. Billed (D)", "This Period (E)", "Stored Mat. (F)", "Total D+E+F (G)", "% (G/C)", "Balance (C-G)", "Retainage"].map(h => (
+                        <th key={h}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sovLines.map((line, idx) => {
+                      const total = line.prevBilled + line.thisPeriod + line.storedMaterial;
+                      const pct = line.scheduledValue > 0 ? total / line.scheduledValue : 0;
+                      return (
+                        <tr key={`sov-${idx}`}>
+                          <td>{line.lineNo}</td>
+                          <td>{line.description}</td>
+                          <td>{billingStatus === "Draft" ? <input type="number" className="cell-input" value={line.scheduledValue} onChange={e => updateLine(sovLines, setSovLines, idx, "scheduledValue", +e.target.value)} /> : fmt(line.scheduledValue)}</td>
+                          <td className="text-dim">{fmt(line.prevBilled)}</td>
+                          <td>{billingStatus === "Draft" ? <input type="number" className="cell-input green" value={line.thisPeriod} onChange={e => updateLine(sovLines, setSovLines, idx, "thisPeriod", +e.target.value)} /> : fmt(line.thisPeriod)}</td>
+                          <td>{billingStatus === "Draft" ? <input type="number" className="cell-input" value={line.storedMaterial} onChange={e => updateLine(sovLines, setSovLines, idx, "storedMaterial", +e.target.value)} /> : fmt(line.storedMaterial)}</td>
+                          <td className="fw700">{fmt(total)}</td>
+                          <td><PctBar pct={pct} /></td>
+                          <td style={{ color: line.scheduledValue - total > 0 ? "#E2E8F0" : "#22C55E" }}>{fmt(line.scheduledValue - total)}</td>
+                          <td className="text-yellow">{fmt(total * retRate)}</td>
+                        </tr>
+                      );
+                    })}
+                    <SubtotalRow label="BASE CONTRACT SUBTOTALS" lines={sovLines} retRate={retRate} />
+
+                    {coLines.length > 0 && (
+                      <>
+                        <tr className="co-section-header"><td colSpan={10}>CHANGE ORDERS</td></tr>
+                        {coLines.map((line, idx) => {
+                          const total = line.prevBilled + line.thisPeriod + line.storedMaterial;
+                          const pct = line.scheduledValue > 0 ? total / line.scheduledValue : 0;
+                          return (
+                            <tr key={`co-${idx}`} className="co-row">
+                              <td style={{ color: "#F97316" }}>{line.lineNo}</td>
+                              <td>{billingStatus === "Draft" ? <input className="cell-input orange wide" value={line.description} onChange={e => updateLine(coLines, setCoLines, idx, "description", e.target.value)} /> : line.description}</td>
+                              <td>{billingStatus === "Draft" ? <input type="number" className="cell-input" value={line.scheduledValue} onChange={e => updateLine(coLines, setCoLines, idx, "scheduledValue", +e.target.value)} /> : fmt(line.scheduledValue)}</td>
+                              <td className="text-dim">{fmt(line.prevBilled)}</td>
+                              <td>{billingStatus === "Draft" ? <input type="number" className="cell-input green" value={line.thisPeriod} onChange={e => updateLine(coLines, setCoLines, idx, "thisPeriod", +e.target.value)} /> : fmt(line.thisPeriod)}</td>
+                              <td>{billingStatus === "Draft" ? <input type="number" className="cell-input" value={line.storedMaterial} onChange={e => updateLine(coLines, setCoLines, idx, "storedMaterial", +e.target.value)} /> : fmt(line.storedMaterial)}</td>
+                              <td className="fw700">{fmt(total)}</td>
+                              <td><PctBar pct={pct} /></td>
+                              <td>{fmt(line.scheduledValue - total)}</td>
+                              <td className="text-yellow">{fmt(total * retRate)}</td>
+                            </tr>
+                          );
+                        })}
+                        <SubtotalRow label="CHANGE ORDER SUBTOTALS" lines={coLines} retRate={retRate} className="co-sub" />
+                      </>
+                    )}
+                    <SubtotalRow label="GRAND TOTALS" lines={allLines} retRate={retRate} className="grand" />
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── G702 VIEW ─── */}
+        {view === "g702" && selectedProject && (
+          <div>
+            <div className="tabs">
+              {[["project", "SOV Entry"], ["g702", "G702 Summary"], ["g703", "G703 Continuation"]].map(([v, label]) => (
+                <button key={v} className={`tab ${view === v ? "active" : ""}`} onClick={() => setView(v)}>{label}</button>
+              ))}
+            </div>
+            <div className="g702">
+              <div className="g702-title">
+                <h2>APPLICATION AND CERTIFICATE FOR PAYMENT</h2>
+                <p>AIA DOCUMENT G702</p>
+              </div>
+              <div className="g702-info">
+                <div>
+                  <div className="g702-info-label">CONTRACTOR</div>
+                  <div className="g702-info-value">York Plumbing & Mechanical</div>
+                  <div className="g702-info-sub">P.O. Box 471886, Tulsa, OK 74147</div>
+                </div>
+                <div>
+                  <div className="g702-info-label">PROJECT</div>
+                  <div className="g702-info-value">{selectedProject.id} — {selectedProject.name}</div>
+                  <div className="g702-info-sub">{selectedProject.customer}</div>
+                </div>
+                <div className="g702-nums">
+                  <div><div className="g702-num-label">APP NUMBER</div><div className="g702-num-value">{payAppNum}</div></div>
+                  <div><div className="g702-num-label">RETAINAGE</div><div className="g702-num-value">{fmtPct(calc.retainageRate)}</div></div>
+                </div>
+                <div className="g702-nums">
+                  <div><div className="g702-num-label">APP DATE</div><div>{appDate}</div></div>
+                  <div><div className="g702-num-label">PERIOD TO</div><div>{periodTo}</div></div>
+                </div>
+              </div>
+              <div className="g702-lines">
+                {[
+                  ["1.", "ORIGINAL CONTRACT SUM", calc.origContract, false],
+                  ["2.", "Net Change by Change Orders", calc.coTotal, false],
+                  ["3.", "CONTRACT SUM TO DATE (Line 1 + 2)", calc.contractToDate, false],
+                  ["4.", "TOTAL COMPLETED & STORED TO DATE", calc.totalCompleted, false],
+                  ["5.", `RETAINAGE (${fmtPct(calc.retainageRate)} of completed)`, calc.totalRetainage, false],
+                  ["6.", "TOTAL EARNED LESS RETAINAGE (Line 4 - 5)", calc.earnedLessRetainage, false],
+                  ["7.", "LESS PREVIOUS CERTIFICATES FOR PAYMENT", prevCertified, false],
+                  ["8.", "CURRENT PAYMENT DUE", calc.currentDue, true],
+                  ["9.", "BALANCE TO FINISH, INCLUDING RETAINAGE", calc.balanceToFinish, false],
+                ].map(([num, label, val, highlight]) => (
+                  <div key={num} className={`g702-line ${highlight ? "highlight" : ""}`}>
+                    <div className="g702-line-label"><span>{num}</span> {label}</div>
+                    <div className="g702-line-value">{fmt(val)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
