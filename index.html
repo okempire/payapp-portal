@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PayApp Portal — Kroy Plumbing & Mechanical</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%233B82F6'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-weight='800' font-size='18' font-family='Arial'%3EK%3C/text%3E%3C/svg%3E" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0F1117; font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace; color: #E2E8F0; font-size: 13px; }
+    #root { min-height: 100vh; }
+    .toast { position: fixed; top: 20px; right: 20px; background: #22C55E; color: #000; padding: 10px 20px; border-radius: 6px; font-weight: 600; z-index: 999; font-size: 12px; transition: opacity 0.3s; }
+    .toast.hidden { opacity: 0; pointer-events: none; }
+
+    /* HEADER — dark */
+    .header { background: #1A1D27; border-bottom: 1px solid #2A2D3A; padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
+    .header-logo { width: 32px; height: 32px; background: #3B82F6; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; cursor: pointer; }
+    .header-title { font-weight: 700; font-size: 14px; letter-spacing: 0.05em; color: #E2E8F0; }
+    .header-sub { font-size: 10px; color: #64748B; letter-spacing: 0.1em; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .header-proj-id { color: #64748B; } .header-proj-name { font-weight: 600; color: #E2E8F0; }
+    .status-badge { padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .status-draft { background: #1E3A5F; color: #3B82F6; } .status-pending { background: #422006; color: #EAB308; } .status-final { background: #14532D; color: #22C55E; }
+    .container { max-width: 1500px; margin: 0 auto; padding: 24px; }
+
+    /* DASHBOARD */
+    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .dash-title { font-size: 20px; font-weight: 700; color: #E2E8F0; } .dash-period { font-size: 11px; color: #64748B; }
+    .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; }
+    .project-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; }
+    .project-card:hover { border-color: #3B82F6; box-shadow: 0 4px 16px rgba(59,130,246,0.2); }
+    .card-top { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .card-id { font-size: 11px; color: #3B82F6; font-weight: 600; letter-spacing: 0.08em; }
+    .card-status { font-size: 11px; color: #16A34A; font-weight: 600; }
+    .card-name { font-weight: 700; font-size: 15px; margin-bottom: 6px; color: #0F172A; }
+    .card-customer { color: #64748B; font-size: 12px; margin-bottom: 16px; }
+    .card-stats { display: flex; justify-content: space-between; }
+    .stat-label { font-size: 10px; color: #94A3B8; margin-bottom: 2px; } .stat-value { font-weight: 600; color: #0F172A; }
+
+    /* TABS & BUTTONS — white surfaces on dark bg */
+    .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .tab { background: #FFFFFF; color: #64748B; border: 1px solid #E2E8F0; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: inherit; transition: all 0.15s; }
+    .tab:hover { border-color: #3B82F6; color: #3B82F6; }
+    .tab.active { background: #3B82F6; color: #fff; border-color: #3B82F6; }
+    .tab-spacer { flex: 1; }
+    .btn-co { background: #FFFFFF; color: #F97316; border: 1px solid #E2E8F0; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: inherit; transition: all 0.15s; }
+    .btn-co:hover { border-color: #F97316; }
+    .btn-submit { background: #FBBF24; color: #78350F; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px; font-family: inherit; transition: all 0.15s; }
+    .btn-submit:hover { background: #F59E0B; }
+    .btn-finalize { background: #22C55E; color: #FFFFFF; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px; font-family: inherit; transition: all 0.15s; }
+    .btn-finalize:hover { background: #16A34A; }
+
+    /* SUMMARY CARDS — white on dark */
+    .summary-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+    .summary-card { background: #FFFFFF; border-radius: 8px; padding: 14px 16px; }
+    .summary-label { font-size: 10px; color: #94A3B8; margin-bottom: 6px; letter-spacing: 0.06em; }
+    .summary-value { font-size: 16px; font-weight: 700; color: #0F172A; }
+
+    /* SOV TABLE — white surface */
+    .sov-wrapper { background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .sov-header { padding: 14px 16px; border-bottom: 2px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .sov-title { font-weight: 700; font-size: 14px; color: #0F172A; } .sov-meta { font-size: 11px; color: #94A3B8; }
+    .sov-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; color: #334155; }
+    thead tr { background: #F8FAFC; }
+    th { padding: 10px 6px; text-align: right; color: #64748B; font-weight: 600; font-size: 9.5px; letter-spacing: 0.04em; border-bottom: 2px solid #E2E8F0; white-space: nowrap; }
+    th:nth-child(2) { text-align: left; }
+    td { padding: 8px 6px; text-align: right; border-bottom: 1px solid #F1F5F9; white-space: nowrap; color: #334155; }
+    td:nth-child(1) { text-align: center; color: #94A3B8; }
+    td:nth-child(2) { text-align: left; white-space: normal; color: #0F172A; font-weight: 500; }
+    tbody tr:hover { background: #F8FAFC; }
+
+    /* Input column highlights — subtle tints on white */
+    th.col-pct-bill { background: #F0FDFF; color: #0891B2; border-bottom-color: #06B6D4; }
+    td.col-pct-bill { background: #F0FDFF; }
+    th.col-this-period { background: #F0FDF4; color: #16A34A; border-bottom-color: #22C55E; }
+    td.col-this-period { background: #F0FDF4; }
+    th.col-stored { background: #FFFBEB; color: #D97706; border-bottom-color: #EAB308; }
+    td.col-stored { background: #FFFBEB; }
+
+    /* CO rows */
+    .co-row { background: #FFF7ED; }
+    .co-row:hover { background: #FFEDD5 !important; }
+    .co-row td:nth-child(1), .co-row td:nth-child(2) { color: #EA580C; }
+    .co-section-header td { padding: 8px; background: #FFF7ED; font-weight: 700; font-size: 11px; color: #EA580C; letter-spacing: 0.08em; border-bottom: 2px solid #FB923C; }
+
+    /* Subtotals */
+    .subtotal-row { border-top: 2px solid #E2E8F0; border-bottom: 2px solid #E2E8F0; background: #F8FAFC; }
+    .subtotal-row td { padding: 8px 6px; font-weight: 700; color: #0F172A; }
+    .subtotal-row.co-sub { border-color: #FB923C; background: #FFF7ED; }
+    .subtotal-row.grand { background: #EFF6FF; border-color: #3B82F6; }
+    .subtotal-row.grand td { color: #1E40AF; }
+
+    /* Inputs on white table */
+    .cell-input { background: #FFFFFF; border: 1px solid #CBD5E1; color: #0F172A; padding: 4px 5px; border-radius: 4px; text-align: right; width: 78px; font-size: 12px; font-family: inherit; outline: none; transition: border-color 0.15s; }
+    .cell-input:focus { border-color: #3B82F6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+    .cell-input.green { color: #16A34A; border-color: #BBF7D0; background: #F0FDF4; }
+    .cell-input.green:focus { border-color: #22C55E; box-shadow: 0 0 0 2px rgba(34,197,94,0.15); }
+    .cell-input.cyan { color: #0891B2; border-color: #A5F3FC; width: 58px; text-align: center; background: #F0FDFF; }
+    .cell-input.cyan:focus { border-color: #06B6D4; box-shadow: 0 0 0 2px rgba(6,182,212,0.15); }
+    .cell-input.yellow { color: #D97706; border-color: #FDE68A; background: #FFFBEB; }
+    .cell-input.yellow:focus { border-color: #EAB308; box-shadow: 0 0 0 2px rgba(234,179,8,0.15); }
+    .cell-input.orange { color: #EA580C; } .cell-input.wide { width: 100%; text-align: left; }
+
+    /* Pct bar */
+    .pct-bar-wrap { display: flex; align-items: center; gap: 5px; justify-content: flex-end; }
+    .pct-bar-track { width: 36px; height: 4px; background: #E2E8F0; border-radius: 2px; overflow: hidden; }
+    .pct-bar-fill { height: 100%; border-radius: 2px; }
+    .pct-text { font-size: 11px; min-width: 36px; text-align: right; }
+
+    /* Text colors — adjusted for white table */
+    .text-green { color: #16A34A; } .text-yellow { color: #D97706; } .text-orange { color: #EA580C; }
+    .text-blue { color: #2563EB; } .text-cyan { color: #0891B2; }
+    .text-dim { color: #94A3B8; } .fw700 { font-weight: 700; }
+
+    /* Hint bar */
+    .input-hint { font-size: 9px; color: #64748B; padding: 8px 16px; border-bottom: 1px solid #E2E8F0; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; background: #F8FAFC; }
+    .hint-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 4px; }
+
+    /* G702 — white card */
+    .g702 { background: #FFFFFF; border-radius: 8px; padding: 32px; max-width: 800px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .g702-title { text-align: center; margin-bottom: 24px; }
+    .g702-title h2 { font-size: 16px; font-weight: 800; letter-spacing: 0.08em; margin: 0; color: #0F172A; }
+    .g702-title p { font-size: 11px; color: #94A3B8; margin-top: 4px; }
+    .g702-info { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+    .g702-info-label { font-size: 10px; color: #94A3B8; margin-bottom: 4px; }
+    .g702-info-value { font-weight: 700; color: #0F172A; } .g702-info-sub { color: #64748B; }
+    .g702-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .g702-num-label { font-size: 10px; color: #94A3B8; } .g702-num-value { font-weight: 700; font-size: 18px; color: #0F172A; }
+    .g702-lines { border-top: 1px solid #E2E8F0; padding-top: 20px; }
+    .g702-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F1F5F9; color: #334155; }
+    .g702-line-label span { color: #94A3B8; margin-right: 8px; } .g702-line-value { font-weight: 700; color: #0F172A; }
+    .g702-line.highlight { background: #F0FDF4; margin: 0 -16px; padding: 12px 16px; border-radius: 6px; border: 1px solid #BBF7D0; }
+    .g702-line.highlight .g702-line-value { color: #16A34A; font-size: 18px; }
+
+    @media (max-width: 1100px) { .summary-cards { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) { .summary-cards { grid-template-columns: repeat(2, 1fr); } .dash-grid { grid-template-columns: 1fr; } .g702-info { grid-template-columns: 1fr; } .container { padding: 12px; } .header { padding: 10px 14px; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const PROJECTS = [
+  { id: "PRJ-001", name: "Commercial Office HVAC Retrofit", customer: "ABC Construction", baseContract: 485000, retainageRate: 0.10, status: "Active" },
+  { id: "PRJ-002", name: "K-12 School New Construction", customer: "Box Construction", baseContract: 312000, retainageRate: 0.10, status: "Active" },
+  { id: "PRJ-003", name: "Medical Clinic Plumbing Renovation", customer: "Connor Construction", baseContract: 178500, retainageRate: 0.05, status: "Active" },
+];
+
+const mkSOV = () => [
+  "Mobilization","HVAC Labor","HVAC Material","HVAC Equipment","Plumbing Labor",
+  "Plumbing Material","Plumbing Fixtures","Mechanical Material","Subcontractors",
+  "Controls","Insulation","Test and Balance","Excavation","Demobilization"
+].map((d,i) => ({ lineNo:i+1, description:d, scheduledValue:0, prevBilled:0, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false }));
+
+const SAMPLE_SOV = [
+  { lineNo:1, description:"Mobilization", scheduledValue:24250, prevBilled:24250, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false },
+  { lineNo:2, description:"HVAC Labor", scheduledValue:145500, prevBilled:72750, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false },
+  { lineNo:3, description:"HVAC Material", scheduledValue:97000, prevBilled:58200, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false },
+  { lineNo:4, description:"HVAC Equipment", scheduledValue:48500, prevBilled:48500, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false },
+  { lineNo:5, description:"Plumbing Labor", scheduledValue:72750, prevBilled:36375, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false },
+  { lineNo:6, description:"Plumbing Material", scheduledValue:48500, prevBilled:24250, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false },
+  { lineNo:7, description:"Subcontractors", scheduledValue:24250, prevBilled:12125, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false },
+  { lineNo:8, description:"Controls", scheduledValue:14550, prevBilled:0, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false },
+  { lineNo:9, description:"Demobilization", scheduledValue:9700, prevBilled:0, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:false },
+];
+
+const SAMPLE_COS = [
+  { lineNo:10, description:"CO-01: Additional RTU", scheduledValue:18500, prevBilled:9250, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:true },
+  { lineNo:11, description:"CO-02: Reroute Ductwork", scheduledValue:7200, prevBilled:0, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:true },
+];
+
+const fmt = (n) => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
+const fmtPct = (n) => (n*100).toFixed(1)+"%";
+const today = () => new Date().toISOString().slice(0,10);
+const periodEnd = () => { const d=new Date(); d.setMonth(d.getMonth(),0); return d.toISOString().slice(0,10); };
+
+function PctBar({ pct }) {
+  const c = pct >= 1 ? "#16A34A" : pct >= 0.5 ? "#2563EB" : pct > 0 ? "#D97706" : "#CBD5E1";
+  return (<div className="pct-bar-wrap"><div className="pct-bar-track"><div className="pct-bar-fill" style={{width:`${Math.min(pct*100,100)}%`,background:c}} /></div><span className="pct-text" style={{color:c}}>{(pct*100).toFixed(0)}%</span></div>);
+}
+
+const COL_HEADERS = ["#","Description","Scheduled Value (C)","Prev. Billed (D)","% to Bill","This Period (E)","Stored Mat. (F)","Total (G)","% (G/C)","Balance (C-G)","Retainage"];
+
+function SubtotalRow({ label, lines, retRate, className }) {
+  const sv=lines.reduce((s,l)=>s+l.scheduledValue,0);
+  const prev=lines.reduce((s,l)=>s+l.prevBilled,0);
+  const tp=lines.reduce((s,l)=>s+l.thisPeriod,0);
+  const sm=lines.reduce((s,l)=>s+l.storedMaterial,0);
+  const total=prev+tp+sm; const pct=sv>0?total/sv:0;
+  return (
+    <tr className={`subtotal-row ${className||""}`}>
+      <td colSpan={2} style={{textAlign:"left",letterSpacing:"0.06em",fontSize:11}}>{label}</td>
+      <td>{fmt(sv)}</td><td className="text-dim">{fmt(prev)}</td><td></td>
+      <td className="text-green fw700">{fmt(tp)}</td><td>{fmt(sm)}</td>
+      <td className="fw700">{fmt(total)}</td><td><PctBar pct={pct} /></td><td>{fmt(sv-total)}</td><td className="text-yellow">{fmt(total*retRate)}</td>
+    </tr>
+  );
+}
+
+function App() {
+  const [view, setView] = useState("dashboard");
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [payAppNum, setPayAppNum] = useState(6);
+  const [appDate] = useState(today());
+  const [periodTo] = useState(periodEnd());
+  const [sovLines, setSovLines] = useState([]);
+  const [coLines, setCoLines] = useState([]);
+  const [prevCertified, setPrevCertified] = useState(0);
+  const [billingStatus, setBillingStatus] = useState("Draft");
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null),3000); };
+
+  const selectProject = (proj) => {
+    setSelectedProject(proj);
+    if (proj.id === "PRJ-001") {
+      setSovLines(SAMPLE_SOV.map(l=>({...l}))); setCoLines(SAMPLE_COS.map(l=>({...l})));
+      setPrevCertified(257130); setPayAppNum(6);
+    } else {
+      const pcts = [0.05,0.20,0.15,0.10,0.15,0.10,0.05,0.05,0.05,0.03,0.03,0.02,0.01,0.01];
+      setSovLines(mkSOV().map((l,i)=>({...l, scheduledValue:Math.round(proj.baseContract*pcts[i])})));
+      setCoLines([]); setPrevCertified(0); setPayAppNum(1);
+    }
+    setBillingStatus("Draft"); setView("project");
+  };
+
+  const allLines = useMemo(()=>[...sovLines,...coLines],[sovLines,coLines]);
+
+  const calc = useMemo(()=>{
+    const origContract=sovLines.reduce((s,l)=>s+l.scheduledValue,0);
+    const coTotal=coLines.reduce((s,l)=>s+l.scheduledValue,0);
+    const contractToDate=origContract+coTotal;
+    const totalCompleted=allLines.reduce((s,l)=>s+l.prevBilled+l.thisPeriod+l.storedMaterial,0);
+    const storedTotal=allLines.reduce((s,l)=>s+l.storedMaterial,0);
+    const retainageRate=selectedProject?.retainageRate||0.10;
+    const totalRetainage=(totalCompleted-storedTotal)*retainageRate;
+    const earnedLessRetainage=totalCompleted-totalRetainage;
+    const currentDue=earnedLessRetainage-prevCertified;
+    const balanceToFinish=contractToDate-earnedLessRetainage;
+    return {origContract,coTotal,contractToDate,totalCompleted,storedTotal,retainageRate,totalRetainage,earnedLessRetainage,currentDue,balanceToFinish};
+  },[allLines,sovLines,coLines,selectedProject,prevCertified]);
+
+  const handlePctToBill = (lines, setLines, idx, rawValue) => {
+    setLines(lines.map((l,i) => {
+      if (i !== idx) return l;
+      const pctStr = rawValue;
+      const pctNum = parseFloat(rawValue) || 0;
+      const remaining = Math.max(0, l.scheduledValue - l.prevBilled - l.storedMaterial);
+      const maxPct = l.scheduledValue > 0 ? (remaining / l.scheduledValue) * 100 : 0;
+      const clamped = Math.min(maxPct, Math.max(0, pctNum));
+      const thisPeriod = Math.min(remaining, Math.max(0, Math.round(l.scheduledValue * (clamped / 100))));
+      const displayPct = pctNum > maxPct ? String(Math.round(maxPct * 100) / 100) : pctStr;
+      return { ...l, pctToBill: displayPct, thisPeriod };
+    }));
+  };
+
+  const handleDollarEntry = (lines, setLines, idx, value) => {
+    setLines(lines.map((l,i) => {
+      if (i !== idx) return l;
+      const remaining = Math.max(0, l.scheduledValue - l.prevBilled - l.storedMaterial);
+      const capped = Math.min(remaining, Math.max(0, value));
+      return { ...l, thisPeriod: capped, pctToBill: "" };
+    }));
+  };
+
+  const updateField = (lines, setLines, idx, field, value) => {
+    setLines(lines.map((l,i) => i !== idx ? l : { ...l, [field]: value }));
+  };
+
+  const addCO = () => {
+    const num = coLines.length+1;
+    setCoLines([...coLines, { lineNo:sovLines.length+num, description:`CO-${String(num).padStart(2,"0")}: `, scheduledValue:0, prevBilled:0, thisPeriod:0, pctToBill:"", storedMaterial:0, isCO:true }]);
+  };
+
+  const retRate = selectedProject?.retainageRate || 0.10;
+
+  const renderLine = (line, idx, lines, setLines, isCO) => {
+    const total = line.prevBilled + line.thisPeriod + line.storedMaterial;
+    const pctGC = line.scheduledValue > 0 ? total / line.scheduledValue : 0;
+    const isDraft = billingStatus === "Draft";
+    return (
+      <tr key={`${isCO?"co":"sov"}-${idx}`} className={isCO?"co-row":""}>
+        <td style={isCO?{color:"#EA580C"}:{}}>{line.lineNo}</td>
+        <td>{isDraft && isCO ? <input className="cell-input orange wide" value={line.description} onChange={e=>updateField(lines,setLines,idx,"description",e.target.value)} /> : line.description}</td>
+        <td>{isDraft ? <input type="number" className="cell-input" value={line.scheduledValue} onChange={e=>updateField(lines,setLines,idx,"scheduledValue",+e.target.value)} /> : fmt(line.scheduledValue)}</td>
+        <td className="text-dim">{fmt(line.prevBilled)}</td>
+        <td className="col-pct-bill">
+          {isDraft
+            ? <input type="number" className="cell-input cyan" value={line.pctToBill} placeholder="—" min="0" max="100" step="any"
+                onChange={e => handlePctToBill(lines,setLines,idx,e.target.value)} />
+            : <span className="text-cyan">{line.pctToBill ? line.pctToBill+"%" : "—"}</span>}
+        </td>
+        <td className="col-this-period">
+          {isDraft
+            ? <input type="number" className="cell-input green" value={line.thisPeriod} onChange={e=>handleDollarEntry(lines,setLines,idx,+e.target.value)} />
+            : <span className={line.thisPeriod>0?"text-green fw700":""}>{fmt(line.thisPeriod)}</span>}
+        </td>
+        <td className="col-stored">
+          {isDraft
+            ? <input type="number" className="cell-input yellow" value={line.storedMaterial} onChange={e=>updateField(lines,setLines,idx,"storedMaterial",+e.target.value)} />
+            : fmt(line.storedMaterial)}
+        </td>
+        <td className="fw700">{fmt(total)}</td>
+        <td><PctBar pct={pctGC} /></td>
+        <td style={{color:line.scheduledValue-total>0?"#334155":"#16A34A"}}>{fmt(line.scheduledValue-total)}</td>
+        <td className="text-yellow">{fmt(total*retRate)}</td>
+      </tr>
+    );
+  };
+
+  return (
+    <div>
+      <div className={`toast ${toast?"":"hidden"}`}>{toast}</div>
+      <div className="header">
+        <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setView("dashboard")}>
+          <div className="header-logo">K</div>
+          <div><div className="header-title">PAYAPP PORTAL</div><div className="header-sub">KROY PLUMBING &amp; MECHANICAL</div></div>
+        </div>
+        {selectedProject && view!=="dashboard" && (
+          <div className="header-right">
+            <span className="header-proj-id">{selectedProject.id}</span>
+            <span className="header-proj-name">{selectedProject.name}</span>
+            <span className={`status-badge status-${billingStatus.toLowerCase().replace(" ","-")}`}>{billingStatus}</span>
+          </div>
+        )}
+      </div>
+      <div className="container">
+        {view==="dashboard" && (
+          <div>
+            <div className="dash-header"><h2 className="dash-title">Active Projects</h2><div className="dash-period">Billing Period: {new Date().toLocaleString("en-US",{month:"long",year:"numeric"})}</div></div>
+            <div className="dash-grid">
+              {PROJECTS.map(p=>(
+                <div key={p.id} className="project-card" onClick={()=>selectProject(p)}>
+                  <div className="card-top"><div className="card-id">{p.id}</div><div className="card-status">{p.status}</div></div>
+                  <div className="card-name">{p.name}</div><div className="card-customer">{p.customer}</div>
+                  <div className="card-stats">
+                    <div><div className="stat-label">CONTRACT</div><div className="stat-value">{fmt(p.baseContract)}</div></div>
+                    <div><div className="stat-label">RETAINAGE</div><div className="stat-value">{fmtPct(p.retainageRate)}</div></div>
+                    <div><div className="stat-label">NEXT PA#</div><div className="stat-value">{p.id==="PRJ-001"?6:1}</div></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(view==="project"||view==="g703") && selectedProject && (
+          <div>
+            <div className="tabs">
+              {[["project","SOV Entry"],["g702","G702 Summary"],["g703","G703 Continuation"]].map(([v,label])=>(
+                <button key={v} className={`tab ${view===v?"active":""}`} onClick={()=>setView(v)}>{label}</button>
+              ))}
+              <div className="tab-spacer" />
+              <button className="btn-co" onClick={addCO}>+ Add CO</button>
+              {billingStatus==="Draft" && <button className="btn-submit" onClick={()=>{setBillingStatus("Pending approval");showToast("Pay App submitted for review");}}>Submit for Review</button>}
+              {billingStatus==="Pending approval" && <button className="btn-finalize" onClick={()=>{setBillingStatus("Final");showToast("Pay App finalized — ready for accounting handoff");}}>Finalize</button>}
+            </div>
+            <div className="summary-cards">
+              {[["Original Contract",fmt(calc.origContract),""],["Change Orders",fmt(calc.coTotal),calc.coTotal>0?"text-orange":"text-dim"],["Contract to Date",fmt(calc.contractToDate),""],["Completed & Stored",fmt(calc.totalCompleted),"text-blue"],[`Current Due (PA#${payAppNum})`,fmt(calc.currentDue),"text-green"]].map(([label,val,cls])=>(
+                <div key={label} className="summary-card"><div className="summary-label">{label}</div><div className={`summary-value ${cls}`}>{val}</div></div>
+              ))}
+            </div>
+            <div className="sov-wrapper">
+              <div className="sov-header">
+                <div className="sov-title">CONTINUATION SHEET — G703</div>
+                <div className="sov-meta">Pay App #{payAppNum} &bull; Period to {periodTo}</div>
+              </div>
+              {billingStatus === "Draft" && (
+                <div className="input-hint">
+                  <span><span className="hint-dot" style={{background:"#06B6D4"}} /> <b style={{color:"#0891B2"}}>% to Bill</b> — enter % of Scheduled Value to bill this period</span>
+                  <span><span className="hint-dot" style={{background:"#22C55E"}} /> <b style={{color:"#16A34A"}}>This Period $</b> — or enter dollar amount directly</span>
+                  <span><span className="hint-dot" style={{background:"#EAB308"}} /> <b style={{color:"#D97706"}}>Stored Mat.</b> — materials on site not yet installed</span>
+                </div>
+              )}
+              <div className="sov-scroll">
+                <table>
+                  <thead><tr>
+                    {COL_HEADERS.map((h,i)=>(
+                      <th key={h} className={i===4?"col-pct-bill":i===5?"col-this-period":i===6?"col-stored":""}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {sovLines.map((line,idx)=>renderLine(line,idx,sovLines,setSovLines,false))}
+                    <SubtotalRow label="BASE CONTRACT SUBTOTALS" lines={sovLines} retRate={retRate} />
+                    {coLines.length>0 && (<>
+                      <tr className="co-section-header"><td colSpan={11}>CHANGE ORDERS</td></tr>
+                      {coLines.map((line,idx)=>renderLine(line,idx,coLines,setCoLines,true))}
+                      <SubtotalRow label="CHANGE ORDER SUBTOTALS" lines={coLines} retRate={retRate} className="co-sub" />
+                    </>)}
+                    <SubtotalRow label="GRAND TOTALS" lines={allLines} retRate={retRate} className="grand" />
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {view==="g702" && selectedProject && (
+          <div>
+            <div className="tabs">
+              {[["project","SOV Entry"],["g702","G702 Summary"],["g703","G703 Continuation"]].map(([v,label])=>(
+                <button key={v} className={`tab ${view===v?"active":""}`} onClick={()=>setView(v)}>{label}</button>
+              ))}
+            </div>
+            <div className="g702">
+              <div className="g702-title"><h2>APPLICATION AND CERTIFICATE FOR PAYMENT</h2><p>AIA DOCUMENT G702</p></div>
+              <div className="g702-info">
+                <div><div className="g702-info-label">CONTRACTOR</div><div className="g702-info-value">Kroy Plumbing &amp; Mechanical</div><div className="g702-info-sub">PO Box 12345, Dallas, TX</div></div>
+                <div><div className="g702-info-label">PROJECT</div><div className="g702-info-value">{selectedProject.id} — {selectedProject.name}</div><div className="g702-info-sub">{selectedProject.customer}</div></div>
+                <div className="g702-nums"><div><div className="g702-num-label">APP NUMBER</div><div className="g702-num-value">{payAppNum}</div></div><div><div className="g702-num-label">RETAINAGE</div><div className="g702-num-value">{fmtPct(calc.retainageRate)}</div></div></div>
+                <div className="g702-nums"><div><div className="g702-num-label">APP DATE</div><div>{appDate}</div></div><div><div className="g702-num-label">PERIOD TO</div><div>{periodTo}</div></div></div>
+              </div>
+              <div className="g702-lines">
+                {[["1.","ORIGINAL CONTRACT SUM",calc.origContract,false],["2.","Net Change by Change Orders",calc.coTotal,false],["3.","CONTRACT SUM TO DATE (Line 1 + 2)",calc.contractToDate,false],["4.","TOTAL COMPLETED & STORED TO DATE",calc.totalCompleted,false],["5.",`RETAINAGE (${fmtPct(calc.retainageRate)} of completed)`,calc.totalRetainage,false],["6.","TOTAL EARNED LESS RETAINAGE (Line 4 - 5)",calc.earnedLessRetainage,false],["7.","LESS PREVIOUS CERTIFICATES FOR PAYMENT",prevCertified,false],["8.","CURRENT PAYMENT DUE",calc.currentDue,true],["9.","BALANCE TO FINISH, INCLUDING RETAINAGE",calc.balanceToFinish,false]].map(([num,label,val,hl])=>(
+                  <div key={num} className={`g702-line ${hl?"highlight":""}`}><div className="g702-line-label"><span>{num}</span> {label}</div><div className="g702-line-value">{fmt(val)}</div></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
